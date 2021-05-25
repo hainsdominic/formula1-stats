@@ -11,6 +11,7 @@ import {
 } from '@material-ui/core';
 import useStyles from './styles';
 
+// Fetches the drivers data from the API
 const fetchDriverData = async (season, driver) => {
   const res = await axios.get(
     `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
@@ -18,6 +19,7 @@ const fetchDriverData = async (season, driver) => {
   return res;
 };
 
+// Fetches all the drivers that participated to the season
 const fetchDrivers = async (season) => {
   const res = await axios.get(
     `http://ergast.com/api/f1/${season}/drivers.json`
@@ -25,6 +27,7 @@ const fetchDrivers = async (season) => {
   return res;
 };
 
+// Returns an array of the total championship points at each GP
 const parseFinishPoints = (Races) => {
   let points = [];
   for (let i = 0; i < Races.length; i++) {
@@ -34,6 +37,7 @@ const parseFinishPoints = (Races) => {
   return points;
 };
 
+// Returns an array of all the circuit names that were used
 const parseCircuitName = (Races) => {
   let names = Races.map((race) => race.raceName);
   return names;
@@ -49,6 +53,7 @@ function App() {
     season: 'current',
   });
 
+  // On each mount and when the params changes, fetches the data and parses it
   useEffect(() => {
     const { season, driver } = params;
     if (driver) {
