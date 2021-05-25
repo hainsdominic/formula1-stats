@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Line } from 'react-chartjs-2';
 
 import {
   CssBaseline,
@@ -14,7 +15,7 @@ const fetchDriverData = async (season, driver) => {
   const res = await axios.get(
     `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
   );
-  return JSON.stringify(res);
+  return res;
 };
 
 const fetchDrivers = async (season) => {
@@ -24,15 +25,39 @@ const fetchDrivers = async (season) => {
   return res;
 };
 
+const parseFinishPoints = (Races) => {
+  let points = [];
+  for (let i = 0; i < Races.length; i++) {
+    const newPoints = parseInt(Races[i].Results[0].points);
+    points.push(i === 0 ? newPoints : newPoints + points[i - 1]);
+  }
+  return points;
+};
+
+const parseCircuitName = (Races) => {
+  let names = Races.map((race) => race.raceName);
+  return names;
+};
+
 function App() {
   const classes = useStyles();
-  const [driverData, setDriverData] = useState('');
+  const [points, setPoints] = useState([]);
+  const [circuitNames, setCircuitNames] = useState([]);
   const [drivers, setDrivers] = useState([]);
-  const [params, setParams] = useState({ driver: '', season: 'current' });
+  const [params, setParams] = useState({
+    driver: '',
+    season: 'current',
+  });
 
   useEffect(() => {
     const { season, driver } = params;
-    // fetchDriverData(season, driver).then((data) => setDriverData(data));
+    if (driver) {
+      fetchDriverData(season, driver).then((data) => {
+        setPoints(parseFinishPoints(data.data.MRData.RaceTable.Races));
+        setCircuitNames(parseCircuitName(data.data.MRData.RaceTable.Races));
+      });
+    }
+
     fetchDrivers(season).then((data) =>
       setDrivers(data.data.MRData.DriverTable.Drivers)
     );
@@ -44,6 +69,20 @@ function App() {
       ...params,
       [name]: event.target.value,
     });
+  };
+
+  // Chart.js setup
+  const data = {
+    labels: circuitNames,
+    datasets: [
+      {
+        label: 'Total championship points',
+        data: points,
+        fill: true,
+        backgroundColor: 'rgba(75,192,192,0.2)',
+        borderColor: 'rgba(75,192,192,1)',
+      },
+    ],
   };
 
   return (
@@ -91,6 +130,7 @@ function App() {
               })}
             </Select>
           </FormControl>
+          <Line data={data} />
         </Container>
       </div>
     </>
