@@ -2,7 +2,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
   container: {
-    padding: theme.spacing(8, 0, 6),
+    margin: theme.spacing(10, 'auto'),
   },
   formControl: {
     margin: theme.spacing(1),
