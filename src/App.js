@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
 
@@ -10,22 +10,6 @@ import {
   Select,
 } from '@material-ui/core';
 import useStyles from './styles';
-
-// Fetches the drivers data from the API
-const fetchDriverData = async (season, driver) => {
-  const res = await axios.get(
-    `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
-  );
-  return res;
-};
-
-// Fetches all the drivers that participated to the season
-const fetchDrivers = async (season) => {
-  const res = await axios.get(
-    `http://ergast.com/api/f1/${season}/drivers.json`
-  );
-  return res;
-};
 
 // Returns an array of the total championship points at each GP
 const parseFinishPoints = (Races) => {
@@ -53,6 +37,22 @@ function App() {
     season: 'current',
   });
 
+  // Fetches the drivers data from the API
+  const fetchDriverData = useCallback(async () => {
+    const { season, driver } = params;
+    const res = await axios.get(
+      `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
+    );
+    return res;
+  }, [params]);
+
+  const fetchDrivers = useCallback(async () => {
+    const res = await axios.get(
+      `http://ergast.com/api/f1/${params.season}/drivers.json`
+    );
+    return res;
+  }, [params.season]);
+
   // On each mount and when the params changes, fetches the data and parses it
   useEffect(() => {
     const { season, driver } = params;
@@ -66,7 +66,7 @@ function App() {
     fetchDrivers(season).then((data) =>
       setDrivers(data.data.MRData.DriverTable.Drivers)
     );
-  }, [params]);
+  }, [params, fetchDriverData, fetchDrivers]);
 
   const handleChange = (event) => {
     const name = event.target.name;
