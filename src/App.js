@@ -22,15 +22,14 @@ const parseFinishPoints = (Races) => {
 };
 
 // Returns an array of all the circuit names that were used
-const parseCircuitName = (Races) => {
+const parseTracks = (Races) => {
   let names = Races.map((race) => race.raceName);
   return names;
 };
 
 function App() {
   const classes = useStyles();
-  const [points, setPoints] = useState([]);
-  const [circuitNames, setCircuitNames] = useState([]);
+  const [driverData, setDriverData] = useState({ points: [], tracks: [] });
   const [drivers, setDrivers] = useState([]);
   const [params, setParams] = useState({
     driver: '',
@@ -57,16 +56,20 @@ function App() {
   useEffect(() => {
     const { season, driver } = params;
     if (driver) {
-      fetchDriverData(season, driver).then((data) => {
-        setPoints(parseFinishPoints(data.data.MRData.RaceTable.Races));
-        setCircuitNames(parseCircuitName(data.data.MRData.RaceTable.Races));
+      fetchDriverData(season, driver).then((res) => {
+        setDriverData({
+          points: parseFinishPoints(res.data.MRData.RaceTable.Races),
+          tracks: parseTracks(res.data.MRData.RaceTable.Races),
+        });
       });
     }
+  }, [params, fetchDriverData]);
 
-    fetchDrivers(season).then((data) =>
+  useEffect(() => {
+    fetchDrivers(params.season).then((data) =>
       setDrivers(data.data.MRData.DriverTable.Drivers)
     );
-  }, [params, fetchDriverData, fetchDrivers]);
+  }, [params.season, fetchDrivers]);
 
   const handleChange = (event) => {
     const name = event.target.name;
@@ -78,11 +81,11 @@ function App() {
 
   // Chart.js setup
   const data = {
-    labels: circuitNames,
+    labels: driverData.tracks,
     datasets: [
       {
         label: 'Total championship points',
-        data: points,
+        data: driverData.points,
         fill: true,
         backgroundColor: 'rgba(75,192,192,0.2)',
         borderColor: 'rgba(75,192,192,1)',
