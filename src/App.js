@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import produce from 'immer';
 import { Line } from 'react-chartjs-2';
@@ -35,6 +35,13 @@ const fetchDriverData = async (season, driver) => {
   return res;
 };
 
+const fetchDrivers = async (season) => {
+  const res = await axios.get(
+    `http://ergast.com/api/f1/${season}/drivers.json`
+  );
+  return res;
+};
+
 function App() {
   const classes = useStyles();
   const [driverData, setDriverData] = useState({
@@ -45,18 +52,11 @@ function App() {
   });
   const [drivers, setDrivers] = useState([]);
 
-  const fetchDrivers = useCallback(async () => {
-    const res = await axios.get(
-      `http://ergast.com/api/f1/${driverData.season}/drivers.json`
-    );
-    return res;
-  }, [driverData.season]);
-
   useEffect(() => {
-    fetchDrivers(driverData.season).then((data) =>
-      setDrivers(data.data.MRData.DriverTable.Drivers)
+    fetchDrivers(driverData.season).then((res) =>
+      setDrivers(res.data.MRData.DriverTable.Drivers)
     );
-  }, [driverData.season, fetchDrivers]);
+  }, [driverData.season]);
 
   const seasonChange = async (e) => {
     const season = e.target.value;
