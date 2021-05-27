@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import produce from 'immer';
 import { Line } from 'react-chartjs-2';
 
 import {
@@ -27,56 +28,56 @@ const parseTracks = (Races) => {
   return names;
 };
 
+const fetchDriverData = async (season, driver) => {
+  const res = await axios.get(
+    `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
+  );
+  return res;
+};
+
 function App() {
   const classes = useStyles();
-  const [driverData, setDriverData] = useState({ points: [], tracks: [] });
-  const [drivers, setDrivers] = useState([]);
-  const [params, setParams] = useState({
+  const [driverData, setDriverData] = useState({
     driver: '',
     season: 'current',
+    points: [],
+    tracks: [],
   });
-
-  // Fetches the drivers data from the API
-  const fetchDriverData = useCallback(async () => {
-    const { season, driver } = params;
-    const res = await axios.get(
-      `http://ergast.com/api/f1/${season}/drivers/${driver}/results.json`
-    );
-    return res;
-  }, [params]);
+  const [drivers, setDrivers] = useState([]);
 
   const fetchDrivers = useCallback(async () => {
     const res = await axios.get(
-      `http://ergast.com/api/f1/${params.season}/drivers.json`
+      `http://ergast.com/api/f1/${driverData.season}/drivers.json`
     );
     return res;
-  }, [params.season]);
-
-  // On each mount and when the params changes, fetches the data and parses it
-  useEffect(() => {
-    const { season, driver } = params;
-    if (driver) {
-      fetchDriverData(season, driver).then((res) => {
-        setDriverData({
-          points: parseFinishPoints(res.data.MRData.RaceTable.Races),
-          tracks: parseTracks(res.data.MRData.RaceTable.Races),
-        });
-      });
-    }
-  }, [params, fetchDriverData]);
+  }, [driverData.season]);
 
   useEffect(() => {
-    fetchDrivers(params.season).then((data) =>
+    fetchDrivers(driverData.season).then((data) =>
       setDrivers(data.data.MRData.DriverTable.Drivers)
     );
-  }, [params.season, fetchDrivers]);
+  }, [driverData.season, fetchDrivers]);
 
-  const handleChange = (event) => {
-    const name = event.target.name;
-    setParams({
-      ...params,
-      [name]: event.target.value,
+  const seasonChange = async (e) => {
+    const season = e.target.value;
+    const res = await fetchDriverData(season, driverData.driver);
+    const newData = produce(driverData, (data) => {
+      data.season = season;
+      data.points = parseFinishPoints(res.data.MRData.RaceTable.Races);
+      data.tracks = parseTracks(res.data.MRData.RaceTable.Races);
     });
+    setDriverData(newData);
+  };
+
+  const driverChange = async (e) => {
+    const driver = e.target.value;
+    const res = await fetchDriverData(driverData.season, driver);
+    const newData = produce(driverData, (data) => {
+      data.driver = driver;
+      data.points = parseFinishPoints(res.data.MRData.RaceTable.Races);
+      data.tracks = parseTracks(res.data.MRData.RaceTable.Races);
+    });
+    setDriverData(newData);
   };
 
   // Chart.js setup
@@ -102,8 +103,8 @@ function App() {
             <InputLabel htmlFor='Season'>Season</InputLabel>
             <Select
               native
-              value={params.season}
-              onChange={handleChange}
+              value={driverData.season}
+              onChange={seasonChange}
               inputProps={{
                 name: 'season',
                 id: 'season',
@@ -121,8 +122,8 @@ function App() {
             <InputLabel htmlFor='driver'>Driver</InputLabel>
             <Select
               native
-              value={params.driver}
-              onChange={handleChange}
+              value={driverData.driver}
+              onChange={driverChange}
               inputProps={{
                 name: 'driver',
                 id: 'driver',
